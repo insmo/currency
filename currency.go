@@ -7,11 +7,8 @@
 package currency
 
 import (
-	"bytes"
-	"encoding/csv"
-	"net/http"
-	"strconv"
-	"sync"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -197,141 +194,105 @@ var currencies = [...]Currency{
 	TJS, TMT, TND, TOP, TRY, TTD, TVD, TWD, TZS, UAH, UGX, USD, UYU, UZS, VEF,
 	VND, VUV, WST, XAF, XCD, XDR, XOF, XPF, YER, ZAR, ZMW, ZWD}
 
+var ErrCurrencyLenght = errors.New("Currency should be 3 char long")
+var ErrCurrencyUnknown = errors.New("Currency is unknown")
+var ErrNotExist = errors.New("Exchange rate or Currency does not exist")
+
+func ParseCurrency(v string) (Currency, error) {
+	if len(v) != 3 {
+		return "", ErrCurrencyLenght
+	}
+
+	cur := Currency(strings.ToUpper(v))
+
+	for _, curb := range currencies {
+		if curb == cur {
+			return cur, nil
+		}
+	}
+
+	return "", ErrCurrencyUnknown
+}
+
 type Converter struct {
-	ex  map[Currency]decimal.Decimal
-	mux sync.Mutex
+	ex *Exchange
 }
 
 func New() *Converter {
-	return &Converter{}
+	return &Converter{
+		ex: NewExchange(),
+	}
 }
 
-func (c *Converter) ConvertString(value string, from, to Currency) decimal.Decimal {
+func (c *Converter) ConvertString(value string, from, to Currency) (decimal.Decimal, error) {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, nil)
 }
 
-func (c *Converter) ConvertStringAt(value string, from, to Currency, at time.Time) decimal.Decimal {
+func (c *Converter) ConvertStringAt(value string, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, &at)
 }
 
-func (c *Converter) Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
+func (c *Converter) Convert(value decimal.Decimal, from, to Currency) (decimal.Decimal, error) {
 	return c.genConvert(value, from, to, nil)
 }
 
-func (c *Converter) ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) decimal.Decimal {
+func (c *Converter) ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	return c.genConvert(value, from, to, &at)
 }
 
-func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) decimal.Decimal {
-	if to != EUR {
-		// we only deal in EUR atm
-		return decimal.Zero
+func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) (decimal.Decimal, error) {
+	var t time.Time
+
+	if at == nil {
+		t = time.Now().UTC()
+	} else {
+		t = *at
 	}
 
-	c.mux.Lock()
-	rate, ok := c.ex[from]
-	c.mux.Unlock()
+	var usd decimal.Decimal
 
-	if !ok {
-		return decimal.Zero
-	}
-
-	//fmt.Println(value, from, "*", rate, to)
-	return value.Mul(rate)
-}
-
-var oneD = decimal.NewFromFloat(1.0)
-
-func (c *Converter) Update() error {
-	// create URL
-	var urlbuffer bytes.Buffer
-
-	// "http://download.finance.yahoo.com/d/quotes.csv?f=snl1d1t1ab&s= + &EURPLN=X
-	urlbuffer.Grow(62 + (len(currencies) * 9) - 1)
-
-	urlbuffer.WriteString("http://download.finance.yahoo.com/d/quotes.csv?f=snl1d1t1ab&s=")
-	urlbuffer.WriteString(string(currencies[0]) + "EUR" + "=X")
-
-	for _, s := range currencies[1:] {
-		urlbuffer.WriteString("," + string(s) + "EUR=X")
-	}
-
-	// do request
-	res, err := readCSVFromUrl(urlbuffer.String())
-
-	if err != nil {
-		return err
-	}
-
-	// parse response
-	ex := make(map[Currency]decimal.Decimal, len(res))
-
-	for _, row := range res {
-		v := row[2]
-
-		if _, err := strconv.ParseFloat(v, 64); err != nil {
-			continue
-		}
-
-		rate, err := decimal.NewFromString(v)
+	if from == USD {
+		usd = value
+	} else {
+		fromRate, err := c.ex.Get(t, from)
 
 		if err != nil {
-			// log
-			continue
+			return decimal.Zero, err
 		}
 
-		v = row[0]
-
-		if len(v) != 8 {
-			continue
-		}
-
-		cur := Currency(v[0:3])
-		ex[cur] = rate
+		usd = value.Mul(fromRate.ToUSD)
 	}
 
-	// update map
-	c.mux.Lock()
-	c.ex = ex
-	c.mux.Unlock()
-	return nil
-}
+	if to == USD {
+		return usd, nil
+	}
 
-func readCSVFromUrl(url string) ([][]string, error) {
-	resp, err := http.Get(url)
+	toRate, err := c.ex.Get(t, to)
 
 	if err != nil {
-		return nil, err
+		return decimal.Zero, err
 	}
 
-	defer resp.Body.Close()
-	reader := csv.NewReader(resp.Body)
-	data, err := reader.ReadAll()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return usd.Mul(toRate.FromUSD), nil
 }
 
 var DefaultConverter = New()
 
-func ConvertString(value string, from, to Currency) decimal.Decimal {
+func ConvertString(value string, from, to Currency) (decimal.Decimal, error) {
 	return DefaultConverter.ConvertString(value, from, to)
 }
 
-func ConvertStringAt(value string, from, to Currency, at time.Time) decimal.Decimal {
+func ConvertStringAt(value string, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	return DefaultConverter.ConvertStringAt(value, from, to, at)
 }
 
-func Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
+func Convert(value decimal.Decimal, from, to Currency) (decimal.Decimal, error) {
 	return DefaultConverter.Convert(value, from, to)
 }
 
-func ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) decimal.Decimal {
+func ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	return DefaultConverter.ConvertAt(value, from, to, at)
 }
 
