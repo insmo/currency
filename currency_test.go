@@ -15,7 +15,7 @@ import (
 func TestCurrencyConverter(t *testing.T) {
 	//ast := assert.NewAssertWithName(t, "CurrencyConverter")
 
-	cc := NewCurrencyConverter()
+	cc := New()
 	cc.Update()
 	fmt.Println(cc.ConvertString("1", USD, EUR))
 	fmt.Println(cc.ConvertString("1", PLN, EUR))

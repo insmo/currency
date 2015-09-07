@@ -197,33 +197,33 @@ var currencies = [...]Currency{
 	TJS, TMT, TND, TOP, TRY, TTD, TVD, TWD, TZS, UAH, UGX, USD, UYU, UZS, VEF,
 	VND, VUV, WST, XAF, XCD, XDR, XOF, XPF, YER, ZAR, ZMW, ZWD}
 
-type CurrencyConverter struct {
+type Converter struct {
 	ex  map[Currency]decimal.Decimal
 	mux sync.Mutex
 }
 
-func NewCurrencyConverter() *CurrencyConverter {
-	return &CurrencyConverter{}
+func New() *Converter {
+	return &Converter{}
 }
 
-func (c *CurrencyConverter) ConvertToEUR(value decimal.Decimal, from Currency) decimal.Decimal {
+func (c *Converter) ConvertToEUR(value decimal.Decimal, from Currency) decimal.Decimal {
 	return c.genConvert(value, from, EUR, nil)
 }
 
-func (c *CurrencyConverter) ConvertEURToUSD(value decimal.Decimal) decimal.Decimal {
+func (c *Converter) ConvertEURToUSD(value decimal.Decimal) decimal.Decimal {
 	return c.genConvert(value, EUR, USD, nil)
 }
 
-func (c *CurrencyConverter) ConvertString(value string, from, to Currency) decimal.Decimal {
+func (c *Converter) ConvertString(value string, from, to Currency) decimal.Decimal {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, nil)
 }
 
-func (c *CurrencyConverter) Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
+func (c *Converter) Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
 	return c.genConvert(value, from, to, nil)
 }
 
-func (c *CurrencyConverter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) decimal.Decimal {
+func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) decimal.Decimal {
 	if to != EUR {
 		// we only deal in EUR atm
 		return decimal.Zero
@@ -243,7 +243,7 @@ func (c *CurrencyConverter) genConvert(value decimal.Decimal, from, to Currency,
 
 var oneD = decimal.NewFromFloat(1.0)
 
-func (c *CurrencyConverter) Update() error {
+func (c *Converter) Update() error {
 	// create URL
 	var urlbuffer bytes.Buffer
 
