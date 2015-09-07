@@ -3,7 +3,6 @@ package currency
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -86,14 +85,14 @@ func (ex *Exchange) update(t time.Time) error {
 }
 
 func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map[Currency]ExchangeRate, error) {
-	data := make(map[Currency]ExchangeRate, yahooData.List.Meta.Count)
+	data := make(map[Currency]ExchangeRate)
 
 	for _, res := range yahooData.List.Resources {
 		sym := res.Resource.Fields.Symbol
 
 		// exp EUR=X
 		if len(sym) != 5 {
-			return nil, ErrCurrencyLenght
+			return nil, ErrCurrencyLength
 		}
 
 		cur, err := ParseCurrency(sym[:3])
@@ -149,6 +148,28 @@ type yahooCurrencyResponse struct {
 }
 
 func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, error) {
+	maxTries := 3
+
+	for i := 0; i < maxTries; i++ {
+		resp, err := fetchYahooData(t)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(resp.List.Resources) > 0 {
+			return resp, nil
+		}
+
+		if i == maxTries-1 {
+			time.Sleep(time.Duration(1e06 * i))
+		}
+	}
+
+	return nil, ErrFetchingData
+}
+
+func fetchYahooData(t time.Time) (*yahooCurrencyResponse, error) {
 	r, err := http.Get("http://finance.yahoo.com/connection/currency-converter-cache?date=" + string(toDate(t)))
 
 	if err != nil {
@@ -172,7 +193,6 @@ func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, erro
 	err = json.Unmarshal(body, target)
 
 	if err != nil {
-		fmt.Println("JSON", err)
 		return nil, err
 	}
 

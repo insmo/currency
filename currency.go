@@ -222,14 +222,15 @@ var currencies = [...]Currency{
 	VEF, VND, VUV, WST, XAF, XCD, XDR, XOF, XPF, YER, ZAR, ZMW, ZWD, XAU, XAG,
 	XCP, XPD, XPT, CYP, DEM, ECS, FRF, IEP, ITL, LTL, LVL, SIT, ZWL, CNH, CLF}
 
-var ErrCurrencyLenght = errors.New("Currency should be 3 char long")
+var ErrCurrencyLength = errors.New("Currency should be 3 char long")
 var ErrCurrencyUnknown = errors.New("Currency is unknown")
 var ErrNotExist = errors.New("Exchange rate or Currency does not exist")
+var ErrFetchingData = errors.New("Unable to fetch data for date")
 
 // ParseCurrency returns the Currency value represented by the string.
 func ParseCurrency(v string) (Currency, error) {
 	if len(v) != 3 {
-		return "", ErrCurrencyLenght
+		return "", ErrCurrencyLength
 	}
 
 	cur := Currency(strings.ToUpper(v))
