@@ -222,28 +222,36 @@ type Converter struct {
 	ex *Exchange
 }
 
+// New initializes an Converter
 func New() *Converter {
 	return &Converter{
 		ex: NewExchange(),
 	}
 }
 
+// Convert converts the decimal value to the given currency.
+func (c *Converter) Convert(value decimal.Decimal, from, to Currency) (decimal.Decimal, error) {
+	return c.genConvert(value, from, to, nil)
+}
+
+// ConvertAt converts the decimal value to the given currency using the
+// exchange rate from the date specificied.
+func (c *Converter) ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) (decimal.Decimal, error) {
+	return c.genConvert(value, from, to, &at)
+}
+
+// ConvertString converts the decimal value (represented as a string) to the
+// given currency.
 func (c *Converter) ConvertString(value string, from, to Currency) (decimal.Decimal, error) {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, nil)
 }
 
+// ConvertStringAt converts the decimal value (represented as a string) to the
+// given currency using the exchange rate from the date specificied.
 func (c *Converter) ConvertStringAt(value string, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, &at)
-}
-
-func (c *Converter) Convert(value decimal.Decimal, from, to Currency) (decimal.Decimal, error) {
-	return c.genConvert(value, from, to, nil)
-}
-
-func (c *Converter) ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) (decimal.Decimal, error) {
-	return c.genConvert(value, from, to, &at)
 }
 
 func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) (decimal.Decimal, error) {
@@ -282,20 +290,37 @@ func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *tim
 	return usd.Mul(toRate.FromUSD), nil
 }
 
+// DefaultConverter is the default Converter and is used by Convert, ConvertAt,
+// ConvertString and ConvertStringAt.
 var DefaultConverter = New()
 
-func ConvertString(value string, from, to Currency) (decimal.Decimal, error) {
-	return DefaultConverter.ConvertString(value, from, to)
-}
-
-func ConvertStringAt(value string, from, to Currency, at time.Time) (decimal.Decimal, error) {
-	return DefaultConverter.ConvertStringAt(value, from, to, at)
-}
-
+// Convert converts the decimal value to the given currency.
+//
+// Convert is a wrapper for DefaultConverter.Convert.
 func Convert(value decimal.Decimal, from, to Currency) (decimal.Decimal, error) {
 	return DefaultConverter.Convert(value, from, to)
 }
 
+// ConvertAt converts the decimal value to the given currency using the
+// exchange rate from the date specificied.
+//
+// ConvertAt is a wrapper for DefaultConverter.ConvertAt.
 func ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) (decimal.Decimal, error) {
 	return DefaultConverter.ConvertAt(value, from, to, at)
+}
+
+// ConvertString converts the decimal value (represented as a string) to the
+// given currency.
+//
+// ConvertString is a wrapper for DefaultConverter.ConvertString.
+func ConvertString(value string, from, to Currency) (decimal.Decimal, error) {
+	return DefaultConverter.ConvertString(value, from, to)
+}
+
+// ConvertStringAt converts the decimal value (represented as a string) to the
+// given currency using the exchange rate from the date specificied.
+//
+// ConvertStringAt is a wrapper for DefaultConverter.ConvertStringAt.
+func ConvertStringAt(value string, from, to Currency, at time.Time) (decimal.Decimal, error) {
+	return DefaultConverter.ConvertStringAt(value, from, to, at)
 }
