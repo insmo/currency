@@ -115,6 +115,7 @@ const (
 	MVR          = "MVR" // Maldives (Maldive Islands) Rufiyaa
 	MWK          = "MWK" // Malawi Kwacha
 	MXN          = "MXN" // Mexico Peso
+	MXV          = "MXV" // Mexican Unidad de Inversion (UDI) (funds code)
 	MYR          = "MYR" // Malaysia Ringgit
 	MZN          = "MZN" // Mozambique Metical
 	NAD          = "NAD" // Namibia Dollar
@@ -179,6 +180,32 @@ const (
 	ZAR          = "ZAR" // South Africa Rand
 	ZMW          = "ZMW" // Zambia Kwacha
 	ZWD          = "ZWD" // Zimbabwe Dollar
+
+	// Metals
+	XAG Currency = "XAU" // Gold
+	XAU          = "XAG" // Silver
+	XCP          = "XCP" // Copper
+	XPD          = "XPD" // Palladium
+	XPT          = "XPT" // Platinum
+
+	// Historic currencies
+	CYP Currency = "CYP" // Cypriot pound
+	DEM          = "DEM" // German mark
+	ECS          = "ECS" // Ecuadorian sucre
+	FRF          = "FRF" // French franc
+	IEP          = "IEP" // Irish pound (punt in Irish language)
+	ITL          = "ITL" // Italian lira
+	LTL          = "LTL" // Lithuanian litas
+	LVL          = "LVL" // Latvian lats
+	SIT          = "SIT" // Slovenian tolar
+	ZWL          = "ZWL" // Zimbabwean dollar A/10
+
+	// Unofficial currency codes
+	CNH Currency = "CNH" // Chinese yuan (when traded offshore)
+
+	// Other
+	CLF Currency = "CLF" // Unidad de Fomento (funds code)
+
 )
 
 var currencies = [...]Currency{
@@ -188,11 +215,12 @@ var currencies = [...]Currency{
 	FKP, GBP, GEL, GGP, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF,
 	IDR, ILS, IMP, INR, IQD, IRR, ISK, JEP, JMD, JOD, JPY, KES, KGS, KHR, KMF,
 	KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD,
-	MMK, MNT, MOP, MRO, MUR, MVR, MWK, MXN, MYR, MZN, NAD, NGN, NIO, NOK, NPR,
-	NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF, SAR,
-	SBD, SCR, SDG, SEK, SGD, SHP, SLL, SOS, SPL, SRD, STD, SVC, SYP, SZL, THB,
-	TJS, TMT, TND, TOP, TRY, TTD, TVD, TWD, TZS, UAH, UGX, USD, UYU, UZS, VEF,
-	VND, VUV, WST, XAF, XCD, XDR, XOF, XPF, YER, ZAR, ZMW, ZWD}
+	MMK, MNT, MOP, MRO, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK,
+	NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON, RSD, RUB, RWF,
+	SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLL, SOS, SPL, SRD, STD, SVC, SYP, SZL,
+	THB, TJS, TMT, TND, TOP, TRY, TTD, TVD, TWD, TZS, UAH, UGX, USD, UYU, UZS,
+	VEF, VND, VUV, WST, XAF, XCD, XDR, XOF, XPF, YER, ZAR, ZMW, ZWD, XAU, XAG,
+	XCP, XPD, XPT, CYP, DEM, ECS, FRF, IEP, ITL, LTL, LVL, SIT, ZWL, CNH, CLF}
 
 var ErrCurrencyLenght = errors.New("Currency should be 3 char long")
 var ErrCurrencyUnknown = errors.New("Currency is unknown")

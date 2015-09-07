@@ -1,7 +1,10 @@
 package currency
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"sync"
@@ -96,6 +99,9 @@ func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map
 		cur, err := ParseCurrency(sym[:3])
 
 		if err != nil {
+			if err == ErrCurrencyUnknown {
+				continue
+			}
 			return nil, err
 		}
 
@@ -151,10 +157,22 @@ func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, erro
 
 	defer r.Body.Close()
 
-	target := new(yahooCurrencyResponse)
-	err = json.NewDecoder(r.Body).Decode(target)
+	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
+		return nil, err
+	}
+
+	// Yahoo finance cache returns JavaScript. Remove that.
+	body = bytes.TrimSpace(body)
+	body = bytes.TrimLeft(body, "/**/YAHOO.Finance.CurrencyConverter.addConversionRates(")
+	body = bytes.TrimRight(body, ");")
+
+	target := new(yahooCurrencyResponse)
+	err = json.Unmarshal(body, target)
+
+	if err != nil {
+		fmt.Println("JSON", err)
 		return nil, err
 	}
 
