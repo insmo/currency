@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // package currency implements a currency converter
-
 package currency
 
 import (
