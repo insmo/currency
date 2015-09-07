@@ -206,21 +206,22 @@ func New() *Converter {
 	return &Converter{}
 }
 
-func (c *Converter) ConvertToEUR(value decimal.Decimal, from Currency) decimal.Decimal {
-	return c.genConvert(value, from, EUR, nil)
-}
-
-func (c *Converter) ConvertEURToUSD(value decimal.Decimal) decimal.Decimal {
-	return c.genConvert(value, EUR, USD, nil)
-}
-
 func (c *Converter) ConvertString(value string, from, to Currency) decimal.Decimal {
 	v, _ := decimal.NewFromString(value)
 	return c.genConvert(v, from, to, nil)
 }
 
+func (c *Converter) ConvertStringAt(value string, from, to Currency, at time.Time) decimal.Decimal {
+	v, _ := decimal.NewFromString(value)
+	return c.genConvert(v, from, to, &at)
+}
+
 func (c *Converter) Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
 	return c.genConvert(value, from, to, nil)
+}
+
+func (c *Converter) ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) decimal.Decimal {
+	return c.genConvert(value, from, to, &at)
 }
 
 func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *time.Time) decimal.Decimal {
@@ -314,6 +315,24 @@ func readCSVFromUrl(url string) ([][]string, error) {
 	}
 
 	return data, nil
+}
+
+var DefaultConverter = New()
+
+func ConvertString(value string, from, to Currency) decimal.Decimal {
+	return DefaultConverter.ConvertString(value, from, to)
+}
+
+func ConvertStringAt(value string, from, to Currency, at time.Time) decimal.Decimal {
+	return DefaultConverter.ConvertStringAt(value, from, to, at)
+}
+
+func Convert(value decimal.Decimal, from, to Currency) decimal.Decimal {
+	return DefaultConverter.Convert(value, from, to)
+}
+
+func ConvertAt(value decimal.Decimal, from, to Currency, at time.Time) decimal.Decimal {
+	return DefaultConverter.ConvertAt(value, from, to, at)
 }
 
 //http://download.finance.yahoo.com/d/quotes.csv?s=EURPLN=X&f=snl1d1t1ab
