@@ -1,3 +1,6 @@
-currency implements a currency converter
+package currency implements a currency converter.
 
-http://godoc.org/github.com/simonz05/currency
+In short the package will fetch the Yahoo Finance exchange rates for the date
+on which you are performing currency conversions.
+
+See godoc for API and usage examples: http://godoc.org/github.com/simonz05/currency
