@@ -4,23 +4,38 @@
 
 package currency
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestCurrencyConverter(t *testing.T) {
 	cc := New()
-	usdtoeur, err := cc.ConvertString("1", USD, EUR)
+	at := time.Date(2015, 9, 6, 0, 1, 0, 0, time.UTC)
 
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		value string
+		from  Currency
+		to    Currency
+		exp   string
+	}{
+		{"1.0000", USD, USD, "1.0000"},
+		{"1.0000", USD, EUR, "0.8988"},
+		{"0.8988", EUR, USD, "1.0000"},
+		{"1.0000", EUR, USD, "1.1126"},
+		{"1.0000", PLN, USD, "0.2640"},
+		{"1.0000", PLN, EUR, "0.2373"},
 	}
 
-	t.Logf("1 USD to EUR = %s", usdtoeur.StringFixed(4))
+	for i, test := range tests {
+		res, err := cc.ConvertStringAt(test.value, test.from, test.to, at)
 
-	plntoeur, err := cc.ConvertString("1", PLN, EUR)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if err != nil {
-		t.Fatal(err)
+		if res.StringFixed(4) != test.exp {
+			t.Fatalf("test %d: expect %s, got %s", i, test.exp, res.StringFixed(4))
+		}
 	}
-
-	t.Logf("1 PLN to EUR = %s", plntoeur.StringFixed(4))
 }

@@ -120,7 +120,7 @@ func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map
 
 		data[cur] = ExchangeRate{
 			FromUSD: fromUSD,
-			ToUSD:   fromUSD.Div(oneD),
+			ToUSD:   oneD.Div(fromUSD),
 		}
 	}
 
