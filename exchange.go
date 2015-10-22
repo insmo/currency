@@ -61,7 +61,7 @@ func (ex *Exchange) Get(t time.Time, c Currency) (ExchangeRate, error) {
 	rate, ok := day[c]
 
 	if !ok {
-		return ExchangeRate{}, ErrNotExist
+		return ExchangeRate{}, ErrNotExist{Currency: c, Time: t}
 	}
 
 	return rate, nil
@@ -148,21 +148,21 @@ type yahooCurrencyResponse struct {
 }
 
 func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, error) {
-	maxTries := 3
+	maxTries := 7
 
-	for i := 0; i < maxTries; i++ {
+	for i := 1; i < maxTries; i++ {
 		resp, err := fetchYahooData(t)
 
 		if err != nil {
-			return nil, err
-		}
-
-		if len(resp.List.Resources) > 0 {
+			if i == maxTries {
+				return nil, err
+			}
+		} else if len(resp.List.Resources) > 0 {
 			return resp, nil
 		}
 
-		if i == maxTries-1 {
-			time.Sleep(time.Duration(1e06 * i))
+		if i == maxTries {
+			time.Sleep(time.Millisecond * 100 * time.Duration(i))
 		}
 	}
 

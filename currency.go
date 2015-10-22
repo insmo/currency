@@ -259,8 +259,16 @@ var currencies = [...]Currency{
 
 var ErrCurrencyLength = errors.New("Currency should be 3 char long")
 var ErrCurrencyUnknown = errors.New("Currency is unknown")
-var ErrNotExist = errors.New("Exchange rate or Currency does not exist")
 var ErrFetchingData = errors.New("Unable to fetch data for date")
+
+type ErrNotExist struct {
+	Time     time.Time
+	Currency Currency
+}
+
+func (err ErrNotExist) Error() string {
+	return fmt.Sprintf("Exchange rate for %s @ %s does not exist", err.Currency, toDate(err.Time))
+}
 
 // ParseCurrency returns the Currency value represented by the string.
 func ParseCurrency(v string) (Currency, error) {
