@@ -6,7 +6,9 @@
 package currency
 
 import (
+	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,6 +17,39 @@ import (
 
 // Currency is a ISO 4217 three-letter alphabetic code.
 type Currency string
+
+// Scan implements the Scanner interface.
+// The value type must be string / []byte otherwise Scan fails.
+func (c *Currency) Scan(value interface{}) error {
+	if value == nil {
+		return fmt.Errorf("nil err")
+	}
+
+	var s string
+
+	switch v := value.(type) {
+	case []byte:
+		s = string(v)
+	case string:
+		s = v
+	default:
+		return fmt.Errorf("Can't convert %T to currency.Currency", value)
+	}
+
+	cc, err := ParseCurrency(s)
+
+	if err != nil {
+		return err
+	}
+
+	*c = cc
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (c Currency) Value() (driver.Value, error) {
+	return string(c), nil
+}
 
 const (
 	AED Currency = "AED" // United Arab Emirates Dirham
