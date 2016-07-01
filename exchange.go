@@ -107,19 +107,29 @@ func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map
 		price := res.Resource.Fields.Price
 
 		// extra check
-		if _, err := strconv.ParseFloat(price, 64); err != nil {
+		f, err := strconv.ParseFloat(price, 64)
+
+		if err != nil {
 			return nil, err
 		}
 
+		isZero := f == 0
 		fromUSD, err := decimal.NewFromString(price)
 
 		if err != nil {
 			return nil, err
 		}
 
+		toUSD := fromUSD
+
+		if !isZero {
+			toUSD = oneD.Div(fromUSD)
+		}
+
+		toUSD = oneD.Div(fromUSD)
 		data[cur] = ExchangeRate{
 			FromUSD: fromUSD,
-			ToUSD:   oneD.Div(fromUSD),
+			ToUSD:   toUSD,
 		}
 	}
 
