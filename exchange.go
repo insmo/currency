@@ -139,15 +139,18 @@ func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]Exchange
 	data := make(map[Currency]ExchangeRate)
 
 	add := func(cur Currency, price float64) {
-		if price == 0.0 {
-			return
+		fromUSD := decimal.NewFromFloat(price)
+		toUSD := fromUSD
+
+		if price != 0 {
+			toUSD = oneD.Div(fromUSD)
 		}
 
-		fromUSD := decimal.NewFromFloat(price)
+		toUSD = oneD.Div(fromUSD)
 
 		data[cur] = ExchangeRate{
 			FromUSD: fromUSD,
-			ToUSD:   oneD.Div(fromUSD),
+			ToUSD:   toUSD,
 		}
 	}
 

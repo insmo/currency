@@ -7,6 +7,8 @@ package currency
 import (
 	"testing"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestCurrencyConverter(t *testing.T) {
@@ -25,6 +27,7 @@ func TestCurrencyConverter(t *testing.T) {
 		{"1.0000", EUR, USD, "1.1159"},
 		{"1.0000", PLN, USD, "0.2572"},
 		{"1.0000", PLN, EUR, "0.2305"},
+		{"0", PLN, EUR, "0.0000"},
 	}
 
 	for i, test := range tests {
@@ -37,5 +40,19 @@ func TestCurrencyConverter(t *testing.T) {
 		if res.StringFixed(4) != test.exp {
 			t.Fatalf("test %d: expect %s, got %s", i, test.exp, res.StringFixed(4))
 		}
+	}
+}
+
+func TestCurrencyDivisionByZero(t *testing.T) {
+	fromUSD, err := decimal.NewFromString("0")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	f, _ := fromUSD.Float64()
+
+	if f != 0 {
+		oneD.Div(fromUSD)
 	}
 }
