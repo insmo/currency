@@ -1,6 +1,7 @@
 package currency implements a currency converter.
 
-In short the package will fetch the Yahoo Finance exchange rates for the date
-on which you are performing currency conversions.
+In short the package uses the European Central Banks exchange rates for
+historical currency conversion. https://fixer.io API is used to access the the
+data. 
 
 See godoc for API and usage examples: http://godoc.org/github.com/simonz05/currency

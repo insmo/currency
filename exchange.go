@@ -1,11 +1,8 @@
 package currency
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -18,6 +15,10 @@ type date string
 
 func toDate(t time.Time) date {
 	return date(t.Format("20060102"))
+}
+
+func toFixerDate(t time.Time) date {
+	return date(t.Format("2006-01-02"))
 }
 
 type ExchangeRate struct {
@@ -68,13 +69,13 @@ func (ex *Exchange) Get(t time.Time, c Currency) (ExchangeRate, error) {
 }
 
 func (ex *Exchange) update(t time.Time) error {
-	yahooData, err := ex.fetchCurrencyData(t)
+	fixerData, err := fetchFixerData(t)
 
 	if err != nil {
 		return err
 	}
 
-	data, err := ex.normalizeCurrencyData(yahooData)
+	data, err := normalizeFixerData(fixerData)
 
 	if err != nil {
 		return err
@@ -84,38 +85,65 @@ func (ex *Exchange) update(t time.Time) error {
 	return nil
 }
 
-func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map[Currency]ExchangeRate, error) {
+type fixerCurrencyResponse struct {
+	Base string `json:"base"`
+	Date string `json:"date"`
+	//Rates interface{} `json:"rate"`
+	Rates struct {
+		AUD float64 `json:"AUD"`
+		BGN float64 `json:"BGN"`
+		BRL float64 `json:"BRL"`
+		CAD float64 `json:"CAD"`
+		CHF float64 `json:"CHF"`
+		CNY float64 `json:"CNY"`
+		CYP float64 `json:"CYP"`
+		CZK float64 `json:"CZK"`
+		DKK float64 `json:"DKK"`
+		EEK float64 `json:"EEK"`
+		EUR float64 `json:"EUR"`
+		GBP float64 `json:"GBP"`
+		HKD float64 `json:"HKD"`
+		HRK float64 `json:"HRK"`
+		HUF float64 `json:"HUF"`
+		IDR float64 `json:"IDR"`
+		ILS float64 `json:"ILS"`
+		INR float64 `json:"INR"`
+		ISK float64 `json:"ISK"`
+		JPY float64 `json:"JPY"`
+		KRW float64 `json:"KRW"`
+		LTL float64 `json:"LTL"`
+		LVL float64 `json:"LVL"`
+		MTL float64 `json:"MTL"`
+		MXN float64 `json:"MXN"`
+		MYR float64 `json:"MYR"`
+		NOK float64 `json:"NOK"`
+		NZD float64 `json:"NZD"`
+		PHP float64 `json:"PHP"`
+		PLN float64 `json:"PLN"`
+		ROL float64 `json:"ROL"`
+		RON float64 `json:"RON"`
+		RUB float64 `json:"RUB"`
+		SEK float64 `json:"SEK"`
+		SGD float64 `json:"SGD"`
+		SIT float64 `json:"SIT"`
+		SKK float64 `json:"SKK"`
+		THB float64 `json:"THB"`
+		TRL float64 `json:"TRL"`
+		TRY float64 `json:"TRY"`
+		USD float64 `json:"USD"`
+		ZAR float64 `json:"ZAR"`
+	} `json:"rates"`
+}
+
+func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]ExchangeRate, error) {
 	data := make(map[Currency]ExchangeRate)
 
-	for _, res := range yahooData.List.Resources {
-		sym := res.Resource.Fields.Symbol
-
-		// exp EUR=X
-		if len(sym) != 5 {
-			return nil, ErrCurrencyLength
+	add := func(cur Currency, price float64) {
+		if price == 0.0 {
+			return
 		}
 
-		cur, err := ParseCurrency(sym[:3])
-
-		if err != nil {
-			if err == ErrCurrencyUnknown {
-				continue
-			}
-			return nil, err
-		}
-
-		price := res.Resource.Fields.Price
-
-		// extra check
-		if _, err := strconv.ParseFloat(price, 64); err != nil {
-			return nil, err
-		}
-
-		fromUSD, err := decimal.NewFromString(price)
-
-		if err != nil {
-			return nil, err
-		}
+		fromUSD := decimal.NewFromFloat(price)
 
 		data[cur] = ExchangeRate{
 			FromUSD: fromUSD,
@@ -123,41 +151,64 @@ func (ex *Exchange) normalizeCurrencyData(yahooData *yahooCurrencyResponse) (map
 		}
 	}
 
+	add(AUD, fixerData.Rates.AUD)
+	add(BGN, fixerData.Rates.BGN)
+	add(BRL, fixerData.Rates.BRL)
+	add(CAD, fixerData.Rates.CAD)
+	add(CHF, fixerData.Rates.CHF)
+	add(CNY, fixerData.Rates.CNY)
+	add(CYP, fixerData.Rates.CYP)
+	add(CZK, fixerData.Rates.CZK)
+	add(DKK, fixerData.Rates.DKK)
+	add(EUR, fixerData.Rates.EUR)
+	add(GBP, fixerData.Rates.GBP)
+	add(HKD, fixerData.Rates.HKD)
+	add(HRK, fixerData.Rates.HRK)
+	add(HUF, fixerData.Rates.HUF)
+	add(IDR, fixerData.Rates.IDR)
+	add(ILS, fixerData.Rates.ILS)
+	add(INR, fixerData.Rates.INR)
+	add(ISK, fixerData.Rates.ISK)
+	add(JPY, fixerData.Rates.JPY)
+	add(KRW, fixerData.Rates.KRW)
+	add(LTL, fixerData.Rates.LTL)
+	add(LVL, fixerData.Rates.LVL)
+	add(MXN, fixerData.Rates.MXN)
+	add(MYR, fixerData.Rates.MYR)
+	add(NOK, fixerData.Rates.NOK)
+	add(NZD, fixerData.Rates.NZD)
+	add(PHP, fixerData.Rates.PHP)
+	add(PLN, fixerData.Rates.PLN)
+	add(RON, fixerData.Rates.RON)
+	add(RUB, fixerData.Rates.RUB)
+	add(SEK, fixerData.Rates.SEK)
+	add(SGD, fixerData.Rates.SGD)
+	add(SIT, fixerData.Rates.SIT)
+	add(THB, fixerData.Rates.THB)
+	add(TRY, fixerData.Rates.TRY)
+	add(USD, fixerData.Rates.USD)
+	add(ZAR, fixerData.Rates.ZAR)
+	//add(USD, fixerData.Rates.USD)
+
+	data[USD] = ExchangeRate{
+		FromUSD: decimal.NewFromFloat(1.0),
+		ToUSD:   decimal.NewFromFloat(1.0),
+	}
+
 	return data, nil
 }
 
-type yahooCurrencyResponse struct {
-	List struct {
-		Meta struct {
-			Count int    `json:"count"`
-			Start int    `json:"start"`
-			Type  string `json:"type"`
-		} `json:"meta"`
-		Resources []struct {
-			Resource struct {
-				Classname string `json:"classname"`
-				Fields    struct {
-					Date   string `json:"date"`
-					Price  string `json:"price"`
-					Symbol string `json:"symbol"`
-					Type   string `json:"type"`
-				} `json:"fields"`
-			} `json:"resource"`
-		} `json:"resources"`
-	} `json:"list"`
-}
+func fetchFixerData(t time.Time) (*fixerCurrencyResponse, error) {
+	maxTries := 1
 
-func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, error) {
-	maxTries := 7
-
-	for i := 1; i < maxTries; i++ {
-		resp, err := fetchYahooData(t)
+	for i := 0; i < maxTries; i++ {
+		resp, err := fixerDataRequest(t)
 
 		if err != nil {
-			if i == maxTries {
+			if i+1 == maxTries {
 				return nil, err
 			}
-		} else if len(resp.List.Resources) > 0 {
+		} else {
 			return resp, nil
 		}
 
@@ -169,8 +220,9 @@ func (ex *Exchange) fetchCurrencyData(t time.Time) (*yahooCurrencyResponse, erro
 	return nil, ErrFetchingData
 }
 
-func fetchYahooData(t time.Time) (*yahooCurrencyResponse, error) {
-	r, err := http.Get("http://finance.yahoo.com/connection/currency-converter-cache?date=" + string(toDate(t)))
+func fixerDataRequest(t time.Time) (*fixerCurrencyResponse, error) {
+	url := "http://api.fixer.io/" + string(toFixerDate(t)) + "?base=USD"
+	r, err := http.Get(url)
 
 	if err != nil {
 		return nil, err
@@ -178,19 +230,9 @@ func fetchYahooData(t time.Time) (*yahooCurrencyResponse, error) {
 
 	defer r.Body.Close()
 
-	body, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Yahoo finance cache returns JavaScript. Remove that.
-	body = bytes.TrimSpace(body)
-	body = bytes.TrimLeft(body, "/**/YAHOO.Finance.CurrencyConverter.addConversionRates(")
-	body = bytes.TrimRight(body, ");")
-
-	target := new(yahooCurrencyResponse)
-	err = json.Unmarshal(body, target)
+	dec := json.NewDecoder(r.Body)
+	target := new(fixerCurrencyResponse)
+	err = dec.Decode(target)
 
 	if err != nil {
 		return nil, err

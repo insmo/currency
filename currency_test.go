@@ -11,7 +11,7 @@ import (
 
 func TestCurrencyConverter(t *testing.T) {
 	cc := New()
-	at := time.Date(2015, 9, 6, 0, 1, 0, 0, time.UTC)
+	at := time.Date(2016, 9, 6, 0, 1, 0, 0, time.UTC)
 
 	tests := []struct {
 		value string
@@ -20,11 +20,11 @@ func TestCurrencyConverter(t *testing.T) {
 		exp   string
 	}{
 		{"1.0000", USD, USD, "1.0000"},
-		{"1.0000", USD, EUR, "0.8988"},
-		{"0.8988", EUR, USD, "1.0000"},
-		{"1.0000", EUR, USD, "1.1126"},
-		{"1.0000", PLN, USD, "0.2640"},
-		{"1.0000", PLN, EUR, "0.2373"},
+		{"1.0000", USD, EUR, "0.8961"},
+		{"0.8961", EUR, USD, "1.0000"},
+		{"1.0000", EUR, USD, "1.1159"},
+		{"1.0000", PLN, USD, "0.2572"},
+		{"1.0000", PLN, EUR, "0.2305"},
 	}
 
 	for i, test := range tests {
