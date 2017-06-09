@@ -146,8 +146,6 @@ func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]Exchange
 			toUSD = oneD.Div(fromUSD)
 		}
 
-		toUSD = oneD.Div(fromUSD)
-
 		data[cur] = ExchangeRate{
 			FromUSD: fromUSD,
 			ToUSD:   toUSD,
