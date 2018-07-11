@@ -1,4 +1,4 @@
-// Copyright 2015 Simon Zimmermann. All rights reserved.
+// Copyright 2018 Simon Zimmermann. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -9,6 +9,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -294,9 +295,13 @@ type Converter struct {
 }
 
 // New initializes an Converter
-func New() *Converter {
+func New(apiToken string) *Converter {
+	if apiToken == "" {
+		apiToken = os.Getenv("FIXER_API_TOKEN")
+	}
+
 	return &Converter{
-		ex: NewExchange(),
+		ex: NewExchange(apiToken),
 	}
 }
 
@@ -334,10 +339,10 @@ func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *tim
 		t = *at
 	}
 
-	var usd decimal.Decimal
+	var eur decimal.Decimal
 
-	if from == USD {
-		usd = value
+	if from == EUR {
+		eur = value
 	} else {
 		fromRate, err := c.ex.Get(t, from)
 
@@ -345,11 +350,11 @@ func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *tim
 			return decimal.Zero, err
 		}
 
-		usd = value.Mul(fromRate.ToUSD)
+		eur = value.Mul(fromRate.ToEUR)
 	}
 
-	if to == USD {
-		return usd, nil
+	if to == EUR {
+		return eur, nil
 	}
 
 	toRate, err := c.ex.Get(t, to)
@@ -358,12 +363,12 @@ func (c *Converter) genConvert(value decimal.Decimal, from, to Currency, at *tim
 		return decimal.Zero, err
 	}
 
-	return usd.Mul(toRate.FromUSD), nil
+	return eur.Mul(toRate.FromEUR), nil
 }
 
 // DefaultConverter is the default Converter and is used by Convert, ConvertAt,
 // ConvertString and ConvertStringAt.
-var DefaultConverter = New()
+var DefaultConverter = New("")
 
 // Convert converts the decimal value to the given currency.
 //

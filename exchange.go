@@ -2,6 +2,7 @@ package currency
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -22,20 +23,22 @@ func toFixerDate(t time.Time) date {
 }
 
 type ExchangeRate struct {
-	FromUSD decimal.Decimal
-	ToUSD   decimal.Decimal
+	FromEUR decimal.Decimal
+	ToEUR   decimal.Decimal
 }
 
 // Exchange holds a cache of currency exchange rates.
 type Exchange struct {
-	cache map[date]map[Currency]ExchangeRate
-	mux   sync.Mutex
+	cache    map[date]map[Currency]ExchangeRate
+	mux      sync.Mutex
+	apiToken string
 }
 
 // NewExchange initializes a new Exchange.
-func NewExchange() *Exchange {
+func NewExchange(apiToken string) *Exchange {
 	return &Exchange{
-		cache: make(map[date]map[Currency]ExchangeRate),
+		cache:    make(map[date]map[Currency]ExchangeRate),
+		apiToken: apiToken,
 	}
 }
 
@@ -69,7 +72,7 @@ func (ex *Exchange) Get(t time.Time, c Currency) (ExchangeRate, error) {
 }
 
 func (ex *Exchange) update(t time.Time) error {
-	fixerData, err := fetchFixerData(t)
+	fixerData, err := fetchFixerData(t, ex.apiToken)
 
 	if err != nil {
 		return err
@@ -86,8 +89,12 @@ func (ex *Exchange) update(t time.Time) error {
 }
 
 type fixerCurrencyResponse struct {
-	Base string `json:"base"`
-	Date string `json:"date"`
+	Base    string `json:"base"`
+	Date    string `json:"date"`
+	Success bool   `json:"success"`
+	Error   struct {
+		Info string `json:"info"`
+	} `json:"error,omitempty"`
 	//Rates interface{} `json:"rate"`
 	Rates struct {
 		AUD float64 `json:"AUD"`
@@ -139,16 +146,16 @@ func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]Exchange
 	data := make(map[Currency]ExchangeRate)
 
 	add := func(cur Currency, price float64) {
-		fromUSD := decimal.NewFromFloat(price)
-		toUSD := fromUSD
+		fromEUR := decimal.NewFromFloat(price)
+		toEUR := fromEUR
 
 		if price != 0 {
-			toUSD = oneD.Div(fromUSD)
+			toEUR = oneD.Div(fromEUR)
 		}
 
 		data[cur] = ExchangeRate{
-			FromUSD: fromUSD,
-			ToUSD:   toUSD,
+			FromEUR: fromEUR,
+			ToEUR:   toEUR,
 		}
 	}
 
@@ -161,7 +168,7 @@ func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]Exchange
 	add(CYP, fixerData.Rates.CYP)
 	add(CZK, fixerData.Rates.CZK)
 	add(DKK, fixerData.Rates.DKK)
-	add(EUR, fixerData.Rates.EUR)
+	//add(EUR, fixerData.Rates.EUR)
 	add(GBP, fixerData.Rates.GBP)
 	add(HKD, fixerData.Rates.HKD)
 	add(HRK, fixerData.Rates.HRK)
@@ -189,21 +196,20 @@ func normalizeFixerData(fixerData *fixerCurrencyResponse) (map[Currency]Exchange
 	add(TRY, fixerData.Rates.TRY)
 	add(USD, fixerData.Rates.USD)
 	add(ZAR, fixerData.Rates.ZAR)
-	//add(USD, fixerData.Rates.USD)
 
-	data[USD] = ExchangeRate{
-		FromUSD: decimal.NewFromFloat(1.0),
-		ToUSD:   decimal.NewFromFloat(1.0),
+	data[EUR] = ExchangeRate{
+		FromEUR: decimal.NewFromFloat(1.0),
+		ToEUR:   decimal.NewFromFloat(1.0),
 	}
 
 	return data, nil
 }
 
-func fetchFixerData(t time.Time) (*fixerCurrencyResponse, error) {
+func fetchFixerData(t time.Time, apiToken string) (*fixerCurrencyResponse, error) {
 	maxTries := 1
 
 	for i := 0; i < maxTries; i++ {
-		resp, err := fixerDataRequest(t)
+		resp, err := fixerDataRequest(t, apiToken)
 
 		if err != nil {
 			if i+1 == maxTries {
@@ -221,8 +227,8 @@ func fetchFixerData(t time.Time) (*fixerCurrencyResponse, error) {
 	return nil, ErrFetchingData
 }
 
-func fixerDataRequest(t time.Time) (*fixerCurrencyResponse, error) {
-	url := "http://api.fixer.io/" + string(toFixerDate(t)) + "?base=USD"
+func fixerDataRequest(t time.Time, apiToken string) (*fixerCurrencyResponse, error) {
+	url := "http://data.fixer.io/api/" + string(toFixerDate(t)) + "?base=EUR&access_key=" + apiToken
 	r, err := http.Get(url)
 
 	if err != nil {
@@ -230,13 +236,16 @@ func fixerDataRequest(t time.Time) (*fixerCurrencyResponse, error) {
 	}
 
 	defer r.Body.Close()
-
 	dec := json.NewDecoder(r.Body)
 	target := new(fixerCurrencyResponse)
 	err = dec.Decode(target)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if !target.Success {
+		return nil, fmt.Errorf("fixer API err: %s", target.Error.Info)
 	}
 
 	return target, nil

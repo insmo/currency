@@ -1,10 +1,11 @@
-// Copyright 2015 Simon Zimmermann. All rights reserved.
+// Copyright 2018 Simon Zimmermann. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
 package currency
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -12,7 +13,13 @@ import (
 )
 
 func TestCurrencyConverter(t *testing.T) {
-	cc := New()
+	token := os.Getenv("FIXER_API_TOKEN")
+
+	if token == "" {
+		t.Skip("FIXER_API_TOKEN required to run test")
+	}
+
+	cc := New(token)
 	at := time.Date(2016, 9, 6, 0, 1, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -22,11 +29,11 @@ func TestCurrencyConverter(t *testing.T) {
 		exp   string
 	}{
 		{"1.0000", USD, USD, "1.0000"},
-		{"1.0000", USD, EUR, "0.8961"},
-		{"0.8961", EUR, USD, "1.0000"},
-		{"1.0000", EUR, USD, "1.1159"},
-		{"1.0000", PLN, USD, "0.2572"},
-		{"1.0000", PLN, EUR, "0.2305"},
+		{"1.0000", USD, EUR, "0.8884"},
+		{"0.8884", EUR, USD, "1.0000"},
+		{"1.0000", EUR, USD, "1.1256"},
+		{"1.0000", PLN, USD, "0.2598"},
+		{"1.0000", PLN, EUR, "0.2308"},
 		{"0", PLN, EUR, "0.0000"},
 	}
 
@@ -44,6 +51,12 @@ func TestCurrencyConverter(t *testing.T) {
 }
 
 func TestCurrencyDivisionByZero(t *testing.T) {
+	token := os.Getenv("FIXER_API_TOKEN")
+
+	if token == "" {
+		t.Skip("FIXER_API_TOKEN required to run test")
+	}
+
 	fromUSD, err := decimal.NewFromString("0")
 
 	if err != nil {

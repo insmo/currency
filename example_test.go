@@ -18,5 +18,5 @@ func ExampleConvertStringAt() {
 
 	fmt.Printf("1 USD to EUR = %s", dec.StringFixed(4))
 	// Output:
-	// 1 USD to EUR = 0.8961
+	// 1 USD to EUR = 0.8884
 }
