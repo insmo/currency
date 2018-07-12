@@ -1,7 +1,17 @@
-package currency implements a currency converter.
+Currency
+========
+
+Package currency implements a currency converter.
 
 In short the package uses the European Central Banks exchange rates for
 historical currency conversion. http://fixer.io API is used to access the the
 data. 
 
 See godoc for API and usage examples: http://godoc.org/github.com/simonz05/currency
+
+Fixer.io API Token
+------------------
+
+It is required to get an API token from fixer.io to use this package. The helper
+functions and default exchange look for an API token on the environment variable
+`FIXER_API_TOKEN`.
