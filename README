@@ -7,7 +7,7 @@ In short the package uses the European Central Banks exchange rates for
 historical currency conversion. http://fixer.io API is used to access the the
 data. 
 
-See godoc for API and usage examples: http://godoc.org/github.com/simonz05/currency
+See godoc for API and usage examples: https://pkg.go.dev/github.com/insmo/currency
 
 Fixer.io API Token
 ------------------
